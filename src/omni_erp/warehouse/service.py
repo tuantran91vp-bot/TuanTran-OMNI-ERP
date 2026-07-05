@@ -129,6 +129,105 @@ class WarehouseService:
             matching_lots = [lot for lot in matching_lots if lot.internal_sku == internal_sku]
         return sum((lot.qty_available for lot in matching_lots), Decimal("0"))
 
+    def find_lot(self, lot_id: str) -> InventoryLot:
+        for lot in self.lots:
+            if lot.lot_id == lot_id:
+                return lot
+        raise ValueError(f"unknown lot: {lot_id}")
+
+    def return_stock_to_lot(
+        self,
+        *,
+        lot_id: str,
+        quantity: Decimal | int | str,
+        document_no: str,
+        returned_date: date,
+    ) -> StockMovement:
+        lot = self.find_lot(lot_id)
+        return_qty = to_decimal(quantity)
+        if return_qty <= 0:
+            raise ValueError("quantity must be positive")
+        if lot.qty_available + return_qty > lot.qty_received:
+            raise ValueError("return quantity exceeds issued quantity for lot")
+
+        lot.qty_available += return_qty
+        movement = self._build_movement(
+            movement_type="return",
+            document_no=document_no,
+            warehouse_id=lot.warehouse_id,
+            internal_sku=lot.internal_sku,
+            quantity=return_qty,
+            movement_date=returned_date,
+            lot_id=lot.lot_id,
+            unit_cost=lot.unit_cost,
+        )
+        self.movements.append(movement)
+        return movement
+
+    def adjust_stock(
+        self,
+        *,
+        warehouse_id: str,
+        internal_sku: str,
+        quantity_delta: Decimal | int | str,
+        document_no: str,
+        adjustment_date: date,
+        unit_cost: Decimal | int | str = "0",
+    ) -> list[StockMovement]:
+        self._ensure_known_stock_target(warehouse_id, internal_sku)
+        delta = to_decimal(quantity_delta)
+        if delta == 0:
+            raise ValueError("quantity_delta must not be zero")
+
+        if delta > 0:
+            lot_id = f"ADJ-{document_no}"
+            lot = InventoryLot(
+                lot_id=lot_id,
+                warehouse_id=warehouse_id,
+                internal_sku=internal_sku,
+                received_date=adjustment_date,
+                qty_received=delta,
+                qty_available=delta,
+                unit_cost=to_decimal(unit_cost),
+            )
+            movement = self._build_movement(
+                movement_type="adjustment",
+                document_no=document_no,
+                warehouse_id=warehouse_id,
+                internal_sku=internal_sku,
+                quantity=delta,
+                movement_date=adjustment_date,
+                lot_id=lot_id,
+                unit_cost=lot.unit_cost,
+            )
+            self.lots.append(lot)
+            self.movements.append(movement)
+            return [movement]
+
+        movements = self.issue_stock_fifo(
+            warehouse_id=warehouse_id,
+            internal_sku=internal_sku,
+            quantity=abs(delta),
+            document_no=document_no,
+            issued_date=adjustment_date,
+        )
+        adjusted_movements: list[StockMovement] = []
+        for movement in movements:
+            adjusted_movement = StockMovement(
+                movement_id=movement.movement_id,
+                movement_type="adjustment",
+                document_no=movement.document_no,
+                warehouse_id=movement.warehouse_id,
+                internal_sku=movement.internal_sku,
+                quantity=movement.quantity,
+                movement_date=movement.movement_date,
+                lot_id=movement.lot_id,
+                unit_cost=movement.unit_cost,
+            )
+            adjusted_movements.append(adjusted_movement)
+            self.movements[self.movements.index(movement)] = adjusted_movement
+        return adjusted_movements
+
     def _fifo_lots(self, warehouse_id: str, internal_sku: str) -> list[InventoryLot]:
         return sorted(
             [

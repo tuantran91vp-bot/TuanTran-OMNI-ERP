@@ -47,6 +47,13 @@ Trang thai trien khai:
 - Hoan kho.
 - Dieu chinh ton.
 
+Trang thai trien khai:
+
+- Da co `FifoEngine` de xuat kho tu dong tu `NormalizedOrderLine`.
+- Da tinh COGS theo tung movement FIFO.
+- Da ho tro hoan kho ve dung lot da xuat.
+- Da ho tro adjustment tang/giam ton, giam ton theo FIFO.
+
 ## Giai doan 5 - Doi soat
 
 - Doanh thu.

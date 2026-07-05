@@ -73,7 +73,7 @@ class StockMovement:
         if self.unit_cost is not None:
             object.__setattr__(self, "unit_cost", to_decimal(self.unit_cost))
 
-        if self.movement_type not in {"inbound", "outbound"}:
-            raise ValueError("movement_type must be inbound or outbound")
+        if self.movement_type not in {"inbound", "outbound", "return", "adjustment"}:
+            raise ValueError("movement_type must be inbound, outbound, return, or adjustment")
         if self.quantity <= 0:
             raise ValueError("quantity must be positive")
