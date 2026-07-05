@@ -43,6 +43,14 @@ Chay toan bo test:
 python -m unittest discover -s tests
 ```
 
+Chay quality gate day du:
+
+```powershell
+.\scripts\check.ps1
+```
+
+GitHub Actions se tu dong chay test va compile tren moi push/pull request vao `main`.
+
 ## Google Sheet template
 
 Thu muc `templates/google_sheets` chua cac file CSV dai dien cho tung sheet:
