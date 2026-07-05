@@ -107,6 +107,14 @@ Trang thai trien khai:
 - Toi uu hieu nang.
 - Dong goi.
 
+Trang thai trien khai:
+
+- Da co Apps Script scaffold cho menu OMNI ERP tren Google Sheet.
+- Da co automation plan cho sync order, refresh dashboard va backup.
+- Da co backup zip cho config, docs, templates va Apps Script.
+- Da co package manifest de kiem tra file bat buoc truoc khi dong goi.
+- Da co tai lieu van hanh trong `docs/operations.md`.
+
 ## Vong lap moi giai doan
 
 Commit -> kiem tra GitHub -> sua loi -> kiem thu.
