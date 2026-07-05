@@ -78,6 +78,13 @@ Trang thai trien khai:
 - Doanh thu.
 - Loi nhuan.
 
+Trang thai trien khai:
+
+- Da co `DashboardSummary` cho KPI tong quan.
+- Da co chart data theo ngay gom doanh thu, loi nhuan va so don.
+- Da co ton kho theo kho, theo SKU va gia tri ton kho.
+- Da co doanh thu va loi nhuan theo san.
+
 ## Giai doan 7 - Bao cao
 
 - Xuat Excel.
