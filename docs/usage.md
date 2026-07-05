@@ -34,7 +34,7 @@ Mo file sau bang trinh duyet:
 web/index.html
 ```
 
-Che do nay dung duoc dashboard/demo data. De import `.xlsx`, chay local server:
+Che do nay dung duoc dashboard/demo data va import `.xlsx/.csv` truc tiep tren trinh duyet moi. Neu trinh duyet khong ho tro giai nen XLSX truc tiep, chay local server:
 
 ```powershell
 .\scripts\start-web.ps1

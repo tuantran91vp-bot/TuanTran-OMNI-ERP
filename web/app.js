@@ -20,6 +20,25 @@ const seedData = {
   ],
 };
 
+const headerAliases = {
+  date: ['order_date', 'date', 'ngay', 'Order Creation Date', 'Created Time', 'createTime'],
+  platform: ['platform', 'san', 'marketplace'],
+  orderId: ['order_id', 'orderId', 'ma_don', 'Order ID', 'orderItemId'],
+  sku: ['sku', 'internal_sku', 'SKU Reference No.', 'Seller SKU', 'sellerSku'],
+  revenue: [
+    'revenue',
+    'gross_revenue',
+    'doanh_thu',
+    'Product Subtotal',
+    'Subtotal',
+    'itemPrice',
+    'Order Total',
+    'Order Amount',
+    'paidPrice',
+  ],
+  cogs: ['cogs', 'cost_of_goods_sold', 'gia_von', 'Gia von'],
+};
+
 let state = structuredClone(seedData);
 
 function loadBrowserState() {
@@ -276,26 +295,13 @@ document.querySelector('#import-form').addEventListener('submit', async (event) 
     return;
   }
 
-  if (window.location.protocol === 'file:') {
-    status.textContent = 'Hay chay scripts/start-web.ps1 roi mo http://127.0.0.1:8765 de import XLSX.';
-    return;
-  }
-
   status.textContent = 'Dang import...';
   try {
-    const response = await fetch(`/api/import/orders?platform=${encodeURIComponent(platform)}`, {
-      method: 'POST',
-      headers: { 'X-Filename': file.name },
-      body: file,
-    });
-    const payload = await response.json();
-    if (!response.ok) {
-      throw new Error(payload.error || 'Import failed');
-    }
-    state.orders.push(...payload.orders);
+    const importedOrders = window.location.protocol === 'file:' ? await importOrderFileInBrowser(file, platform) : await importOrderFileOnServer(file, platform);
+    state.orders.push(...importedOrders);
     saveState();
     renderAll();
-    status.textContent = `Da import ${payload.count} dong don hang.`;
+    status.textContent = `Da import ${importedOrders.length} dong don hang.`;
     event.currentTarget.reset();
   } catch (error) {
     status.textContent = `Loi import: ${error.message}`;
@@ -315,3 +321,200 @@ document.querySelectorAll('#filter-start, #filter-end, #filter-platform').forEac
 });
 
 loadState().then(renderAll);
+
+async function importOrderFileOnServer(file, platform) {
+  const response = await fetch(`/api/import/orders?platform=${encodeURIComponent(platform)}`, {
+    method: 'POST',
+    headers: { 'X-Filename': file.name },
+    body: file,
+  });
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(payload.error || 'Import failed');
+  }
+  return payload.orders;
+}
+
+async function importOrderFileInBrowser(file, platform) {
+  const lowerName = file.name.toLowerCase();
+  if (lowerName.endsWith('.csv')) {
+    return normalizeRows(parseCsv(await file.text()), platform);
+  }
+  if (lowerName.endsWith('.xlsx')) {
+    const rows = await parseXlsx(await file.arrayBuffer());
+    return normalizeRows(rows, platform);
+  }
+  throw new Error('Chi ho tro file .xlsx hoac .csv');
+}
+
+function parseCsv(text) {
+  const lines = text.replace(/^\ufeff/, '').split(/\r?\n/).filter((line) => line.trim());
+  if (!lines.length) return [];
+  const headers = splitCsvLine(lines[0]);
+  return lines.slice(1).map((line) => {
+    const values = splitCsvLine(line);
+    return Object.fromEntries(headers.map((header, index) => [header, values[index] || '']));
+  });
+}
+
+function splitCsvLine(line) {
+  const values = [];
+  let value = '';
+  let quoted = false;
+  for (let index = 0; index < line.length; index += 1) {
+    const char = line[index];
+    if (char === '"' && line[index + 1] === '"') {
+      value += '"';
+      index += 1;
+    } else if (char === '"') {
+      quoted = !quoted;
+    } else if (char === ',' && !quoted) {
+      values.push(value.trim());
+      value = '';
+    } else {
+      value += char;
+    }
+  }
+  values.push(value.trim());
+  return values;
+}
+
+async function parseXlsx(arrayBuffer) {
+  const entries = await unzipEntries(arrayBuffer);
+  const sharedStrings = parseSharedStrings(entries.get('xl/sharedStrings.xml') || '');
+  const sheetXml = entries.get('xl/worksheets/sheet1.xml') || Array.from(entries.entries()).find(([name]) => name.startsWith('xl/worksheets/') && name.endsWith('.xml'))?.[1];
+  if (!sheetXml) throw new Error('File XLSX khong co worksheet');
+
+  const doc = new DOMParser().parseFromString(sheetXml, 'application/xml');
+  const rowNodes = Array.from(doc.getElementsByTagNameNS('*', 'row'));
+  const rows = rowNodes.map((rowNode) => {
+    const values = [];
+    Array.from(rowNode.getElementsByTagNameNS('*', 'c')).forEach((cell) => {
+      const cellRef = cell.getAttribute('r') || '';
+      const index = columnIndex(cellRef);
+      values[index] = cellValue(cell, sharedStrings);
+    });
+    return values.map((value) => value || '');
+  });
+
+  if (!rows.length) return [];
+  const headers = rows[0].map((header) => header.trim());
+  return rows.slice(1).map((values) => Object.fromEntries(headers.map((header, index) => [header, values[index] || '']).filter(([header]) => header)));
+}
+
+function parseSharedStrings(xml) {
+  if (!xml) return [];
+  const doc = new DOMParser().parseFromString(xml, 'application/xml');
+  return Array.from(doc.getElementsByTagNameNS('*', 'si')).map((item) =>
+    Array.from(item.getElementsByTagNameNS('*', 't'))
+      .map((node) => node.textContent || '')
+      .join(''),
+  );
+}
+
+function cellValue(cell, sharedStrings) {
+  const type = cell.getAttribute('t');
+  if (type === 'inlineStr') {
+    return Array.from(cell.getElementsByTagNameNS('*', 't'))
+      .map((node) => node.textContent || '')
+      .join('');
+  }
+  const value = cell.getElementsByTagNameNS('*', 'v')[0]?.textContent || '';
+  if (type === 's') return sharedStrings[Number(value)] || '';
+  return value;
+}
+
+async function unzipEntries(arrayBuffer) {
+  const view = new DataView(arrayBuffer);
+  const entries = new Map();
+  let offset = 0;
+  while (offset + 30 <= view.byteLength) {
+    const signature = view.getUint32(offset, true);
+    if (signature !== 0x04034b50) break;
+
+    const compressionMethod = view.getUint16(offset + 8, true);
+    const compressedSize = view.getUint32(offset + 18, true);
+    const fileNameLength = view.getUint16(offset + 26, true);
+    const extraLength = view.getUint16(offset + 28, true);
+    const nameStart = offset + 30;
+    const dataStart = nameStart + fileNameLength + extraLength;
+    const fileName = new TextDecoder().decode(new Uint8Array(arrayBuffer, nameStart, fileNameLength));
+    const compressed = arrayBuffer.slice(dataStart, dataStart + compressedSize);
+
+    if (fileName.endsWith('.xml')) {
+      entries.set(fileName, await inflateZipEntry(compressed, compressionMethod));
+    }
+    offset = dataStart + compressedSize;
+  }
+  return entries;
+}
+
+async function inflateZipEntry(arrayBuffer, compressionMethod) {
+  if (compressionMethod === 0) {
+    return new TextDecoder().decode(arrayBuffer);
+  }
+  if (compressionMethod !== 8) {
+    throw new Error(`Khong ho tro compression method ${compressionMethod}`);
+  }
+  if (!('DecompressionStream' in window)) {
+    throw new Error('Trinh duyet nay chua ho tro giai nen XLSX truc tiep. Hay dung scripts/start-web.ps1.');
+  }
+
+  const stream = new Blob([arrayBuffer]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+  return await new Response(stream).text();
+}
+
+function columnIndex(reference) {
+  const letters = reference.replace(/[^A-Za-z]/g, '').toUpperCase();
+  let index = 0;
+  for (const letter of letters) {
+    index = index * 26 + letter.charCodeAt(0) - 64;
+  }
+  return Math.max(index - 1, 0);
+}
+
+function normalizeRows(rows, platform) {
+  return rows
+    .map((row) => ({
+      date: normalizeDate(pick(row, 'date')),
+      platform: pick(row, 'platform') || platform || 'Unknown',
+      orderId: pick(row, 'orderId'),
+      sku: pick(row, 'sku'),
+      revenue: numberValue(pick(row, 'revenue')),
+      cogs: numberValue(pick(row, 'cogs')),
+    }))
+    .filter((order) => order.orderId && order.sku);
+}
+
+function pick(row, field) {
+  const normalized = Object.fromEntries(Object.entries(row).map(([key, value]) => [key.trim().toLowerCase(), String(value || '').trim()]));
+  for (const alias of headerAliases[field]) {
+    const value = normalized[alias.toLowerCase()];
+    if (value) return value;
+  }
+  return '';
+}
+
+function normalizeDate(value) {
+  if (!value) return new Date().toISOString().slice(0, 10);
+  if (/^\d+(\.\d+)?$/.test(value)) {
+    const date = new Date(Date.UTC(1899, 11, 30));
+    date.setUTCDate(date.getUTCDate() + Number(value));
+    return date.toISOString().slice(0, 10);
+  }
+  const dayMonthYear = value.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (dayMonthYear) {
+    return `${dayMonthYear[3]}-${dayMonthYear[2].padStart(2, '0')}-${dayMonthYear[1].padStart(2, '0')}`;
+  }
+  return value.slice(0, 10);
+}
+
+function numberValue(value) {
+  const cleaned = String(value || '')
+    .replaceAll(',', '')
+    .replaceAll('VND', '')
+    .replaceAll('₫', '')
+    .trim();
+  const parsed = Number(cleaned);
+  return Number.isFinite(parsed) ? Math.round(parsed) : 0;
+}

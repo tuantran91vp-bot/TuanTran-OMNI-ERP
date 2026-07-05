@@ -33,6 +33,8 @@ class WebAppTests(unittest.TestCase):
         self.assertIn("/api/import/orders", javascript)
         self.assertIn("X-Filename", javascript)
         self.assertIn("/api/state", javascript)
+        self.assertIn("parseXlsx", javascript)
+        self.assertIn("DecompressionStream", javascript)
 
 
 if __name__ == "__main__":

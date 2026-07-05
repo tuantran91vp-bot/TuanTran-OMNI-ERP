@@ -59,7 +59,7 @@ Mo web app:
 web/index.html
 ```
 
-De import file `.xlsx`, chay web app qua local server:
+Web app co the import `.xlsx/.csv` ngay khi mo `web/index.html`. Neu trinh duyet khong ho tro giai nen XLSX truc tiep, chay qua local server:
 
 ```powershell
 .\scripts\start-web.ps1
