@@ -1,0 +1,2 @@
+orderItemId,createTime,sellerSku,quantity,itemPrice,sellerDiscountTotal,shippingFee,paidPrice,currency,status
+LZD-1001,2026-07-05,LZD-BLUE,1,150000,5000,12000,157000,VND,delivered

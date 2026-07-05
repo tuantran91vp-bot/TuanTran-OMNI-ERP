@@ -1,0 +1,2 @@
+Order ID,Order Creation Date,SKU Reference No.,Quantity,Product Subtotal,Seller Voucher,Shipping Fee,Order Total,Currency,Order Status
+SHP-1001,2026-07-05 10:30:00,SHP-RED,2,200000,10000,15000,205000,VND,Completed

@@ -33,6 +33,13 @@ Trang thai trien khai:
 - Mapping SKU.
 - Chuan hoa du lieu.
 
+Trang thai trien khai:
+
+- Da co model `NormalizedOrderLine` cho dau ra chung cua moi san.
+- Da co `SkuMapper` de map SKU san ve SKU noi bo va tinh so luong tru kho.
+- Da co default column map va template CSV mau cho Shopee, TikTok Shop, Lazada.
+- Da co test cho import tung san va loi SKU chua mapping.
+
 ## Giai doan 4 - FIFO Engine
 
 - Tinh gia von.
