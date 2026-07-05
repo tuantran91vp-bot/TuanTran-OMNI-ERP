@@ -297,11 +297,12 @@ document.querySelector('#import-form').addEventListener('submit', async (event) 
 
   status.textContent = 'Dang import...';
   try {
-    const importedOrders = window.location.protocol === 'file:' ? await importOrderFileInBrowser(file, platform) : await importOrderFileOnServer(file, platform);
+    const importResult = await importOrderFile(file, platform);
+    const importedOrders = importResult.orders;
     state.orders.push(...importedOrders);
     saveState();
     renderAll();
-    status.textContent = `Da import ${importedOrders.length} dong don hang.`;
+    status.textContent = `Da import ${importedOrders.length} dong don hang (${importResult.mode}).`;
     event.currentTarget.reset();
   } catch (error) {
     status.textContent = `Loi import: ${error.message}`;
@@ -321,6 +322,18 @@ document.querySelectorAll('#filter-start, #filter-end, #filter-platform').forEac
 });
 
 loadState().then(renderAll);
+
+async function importOrderFile(file, platform) {
+  if (window.location.protocol === 'file:') {
+    return { orders: await importOrderFileInBrowser(file, platform), mode: 'browser' };
+  }
+
+  try {
+    return { orders: await importOrderFileOnServer(file, platform), mode: 'server' };
+  } catch {
+    return { orders: await importOrderFileInBrowser(file, platform), mode: 'browser fallback' };
+  }
+}
 
 async function importOrderFileOnServer(file, platform) {
   const response = await fetch(`/api/import/orders?platform=${encodeURIComponent(platform)}`, {
