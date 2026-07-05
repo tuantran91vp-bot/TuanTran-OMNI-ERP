@@ -20,9 +20,9 @@ const seedData = {
   ],
 };
 
-let state = loadState();
+let state = structuredClone(seedData);
 
-function loadState() {
+function loadBrowserState() {
   const raw = localStorage.getItem(STORAGE_KEY);
   if (!raw) return structuredClone(seedData);
   try {
@@ -32,8 +32,40 @@ function loadState() {
   }
 }
 
-function saveState() {
+async function loadState() {
+  if (window.location.protocol === 'file:') {
+    state = loadBrowserState();
+    return;
+  }
+
+  try {
+    const response = await fetch('/api/state');
+    const serverState = await response.json();
+    state = hasStateData(serverState) ? serverState : structuredClone(seedData);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    if (!hasStateData(serverState)) await saveState();
+  } catch {
+    state = loadBrowserState();
+  }
+}
+
+async function saveState() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  if (window.location.protocol === 'file:') return;
+
+  try {
+    await fetch('/api/state', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(state),
+    });
+  } catch {
+    // Browser localStorage remains the fallback if the local server is interrupted.
+  }
+}
+
+function hasStateData(value) {
+  return value && Array.isArray(value.orders) && Array.isArray(value.inventory) && Array.isArray(value.automations);
 }
 
 function money(value) {
@@ -282,4 +314,4 @@ document.querySelectorAll('#filter-start, #filter-end, #filter-platform').forEac
   input.addEventListener('change', renderReports);
 });
 
-renderAll();
+loadState().then(renderAll);

@@ -46,6 +46,12 @@ Sau do mo:
 http://127.0.0.1:8765
 ```
 
+Khi chay bang local server, moi lan them don hoac import file, du lieu duoc ghi vao file:
+
+```text
+data/omni-data.json
+```
+
 Web app hien co:
 
 - Dashboard KPI.

@@ -32,6 +32,7 @@ class WebAppTests(unittest.TestCase):
         self.assertIn("downloadJson", javascript)
         self.assertIn("/api/import/orders", javascript)
         self.assertIn("X-Filename", javascript)
+        self.assertIn("/api/state", javascript)
 
 
 if __name__ == "__main__":

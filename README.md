@@ -71,6 +71,12 @@ Sau do mo:
 http://127.0.0.1:8765
 ```
 
+Khi chay bang server local, du lieu se duoc luu truc tiep vao:
+
+```text
+data/omni-data.json
+```
+
 Chay truc tiep trong repo:
 
 ```powershell

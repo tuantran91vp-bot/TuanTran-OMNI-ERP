@@ -12,5 +12,6 @@ build/
 .env.*
 !.env.example
 outputs/
+data/*.json
 *.xlsx
 *.pdf
