@@ -232,6 +232,44 @@ document.querySelector('#order-form').addEventListener('submit', (event) => {
   renderAll();
 });
 
+document.querySelector('#import-form').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const form = new FormData(event.currentTarget);
+  const file = form.get('orderFile');
+  const platform = form.get('platform');
+  const status = document.querySelector('#import-status');
+
+  if (!file || !file.name) {
+    status.textContent = 'Chua chon file.';
+    return;
+  }
+
+  if (window.location.protocol === 'file:') {
+    status.textContent = 'Hay chay scripts/start-web.ps1 roi mo http://127.0.0.1:8765 de import XLSX.';
+    return;
+  }
+
+  status.textContent = 'Dang import...';
+  try {
+    const response = await fetch(`/api/import/orders?platform=${encodeURIComponent(platform)}`, {
+      method: 'POST',
+      headers: { 'X-Filename': file.name },
+      body: file,
+    });
+    const payload = await response.json();
+    if (!response.ok) {
+      throw new Error(payload.error || 'Import failed');
+    }
+    state.orders.push(...payload.orders);
+    saveState();
+    renderAll();
+    status.textContent = `Da import ${payload.count} dong don hang.`;
+    event.currentTarget.reset();
+  } catch (error) {
+    status.textContent = `Loi import: ${error.message}`;
+  }
+});
+
 document.querySelector('#reset-data').addEventListener('click', () => {
   state = structuredClone(seedData);
   saveState();

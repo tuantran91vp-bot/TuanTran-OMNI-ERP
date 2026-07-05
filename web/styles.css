@@ -256,7 +256,7 @@ th {
 .split {
   display: grid;
   gap: 14px;
-  grid-template-columns: 320px minmax(0, 1fr);
+  grid-template-columns: 320px minmax(320px, 1fr);
 }
 
 .form {
@@ -282,6 +282,35 @@ th {
 .form button[type='submit'] {
   margin: 16px 16px 0;
   width: calc(100% - 32px);
+}
+
+.import-box {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+}
+
+.import-box label {
+  color: var(--muted);
+  display: grid;
+  gap: 6px;
+}
+
+.import-box input,
+.import-box select {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  min-height: 38px;
+  padding: 8px 10px;
+}
+
+.import-box p {
+  color: var(--muted);
+  margin: 0;
+}
+
+.order-list {
+  margin-top: 14px;
 }
 
 .status-list {

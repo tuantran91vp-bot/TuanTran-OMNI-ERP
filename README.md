@@ -59,6 +59,18 @@ Mo web app:
 web/index.html
 ```
 
+De import file `.xlsx`, chay web app qua local server:
+
+```powershell
+.\scripts\start-web.ps1
+```
+
+Sau do mo:
+
+```text
+http://127.0.0.1:8765
+```
+
 Chay truc tiep trong repo:
 
 ```powershell

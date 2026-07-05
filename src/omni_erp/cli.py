@@ -10,6 +10,7 @@ from pathlib import Path
 
 from omni_erp import __version__
 from omni_erp.operations import build_default_automation_plan, build_package_manifest, create_backup_archive
+from omni_erp.web_server import run_server
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -38,6 +39,12 @@ def _build_parser() -> argparse.ArgumentParser:
 
     automation_parser = subparsers.add_parser("automation-plan", help="Print default automation plan as JSON")
     automation_parser.set_defaults(handler=_handle_automation_plan)
+
+    serve_parser = subparsers.add_parser("serve", help="Run the local OMNI ERP web app server")
+    serve_parser.add_argument("--project-root", default=".", help="Project root directory")
+    serve_parser.add_argument("--host", default="127.0.0.1", help="Host to bind")
+    serve_parser.add_argument("--port", type=int, default=8765, help="Port to bind")
+    serve_parser.set_defaults(handler=_handle_serve)
 
     return parser
 
@@ -91,4 +98,9 @@ def _handle_automation_plan(_: argparse.Namespace) -> int:
         for task in tasks
     ]
     print(json.dumps(payload, indent=2, sort_keys=True))
+    return 0
+
+
+def _handle_serve(args: argparse.Namespace) -> int:
+    run_server(project_root=args.project_root, host=args.host, port=args.port)
     return 0

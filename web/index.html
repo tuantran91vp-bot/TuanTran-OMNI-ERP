@@ -102,23 +102,40 @@
             <button type="submit">Them don</button>
           </form>
           <section class="panel">
-            <div class="panel-head"><h2>Don gan day</h2></div>
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Ngay</th>
-                    <th>San</th>
-                    <th>Don</th>
-                    <th>SKU</th>
-                    <th>Loi nhuan</th>
-                  </tr>
-                </thead>
-                <tbody id="orders-table"></tbody>
-              </table>
-            </div>
+            <div class="panel-head"><h2>Import XLSX/CSV</h2></div>
+            <form id="import-form" class="import-box">
+              <label>San
+                <select name="platform">
+                  <option>Shopee</option>
+                  <option>TikTok Shop</option>
+                  <option>Lazada</option>
+                </select>
+              </label>
+              <label>File don hang
+                <input name="orderFile" type="file" accept=".xlsx,.csv" required>
+              </label>
+              <button type="submit">Import file</button>
+              <p id="import-status"></p>
+            </form>
           </section>
         </div>
+        <section class="panel order-list">
+          <div class="panel-head"><h2>Don gan day</h2></div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Ngay</th>
+                  <th>San</th>
+                  <th>Don</th>
+                  <th>SKU</th>
+                  <th>Loi nhuan</th>
+                </tr>
+              </thead>
+              <tbody id="orders-table"></tbody>
+            </table>
+          </div>
+        </section>
       </section>
 
       <section id="reports" class="view">

@@ -34,11 +34,24 @@ Mo file sau bang trinh duyet:
 web/index.html
 ```
 
+Che do nay dung duoc dashboard/demo data. De import `.xlsx`, chay local server:
+
+```powershell
+.\scripts\start-web.ps1
+```
+
+Sau do mo:
+
+```text
+http://127.0.0.1:8765
+```
+
 Web app hien co:
 
 - Dashboard KPI.
 - Ton kho theo kho/SKU.
 - Them don hang demo va luu vao `localStorage`.
+- Import don hang `.xlsx`/`.csv` khi chay qua local server.
 - Bao cao loc theo ngay/san va tai CSV.
 - Trang van hanh xem automation/package status.
 

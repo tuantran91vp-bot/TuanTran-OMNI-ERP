@@ -24,6 +24,8 @@ PACKAGE_REQUIRED_PATHS = (
     "web/styles.css",
     "web/app.js",
     "web/assets/omni-logo.svg",
+    "scripts/start-web.ps1",
+    "scripts/check.ps1",
 )
 
 
