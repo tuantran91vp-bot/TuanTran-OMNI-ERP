@@ -1,0 +1,2 @@
+lot_id,warehouse_id,internal_sku,supplier_id,received_date,qty_received,qty_available,unit_cost,currency
+LOT-0001,WH-HCM,SKU-0001,SUP-0001,2026-07-05,100,100,0,VND

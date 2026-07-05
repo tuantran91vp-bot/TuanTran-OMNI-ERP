@@ -1,0 +1,26 @@
+{
+  "business": {
+    "name": "TuanTran OMNI ERP",
+    "timezone": "Asia/Saigon",
+    "base_currency": "VND"
+  },
+  "google_sheets": {
+    "spreadsheet_id": "",
+    "template_directory": "templates/google_sheets"
+  },
+  "inventory": {
+    "costing_method": "FIFO",
+    "allow_negative_stock": false
+  },
+  "marketplaces": {
+    "shopee": {
+      "enabled": true
+    },
+    "tiktok_shop": {
+      "enabled": true
+    },
+    "lazada": {
+      "enabled": true
+    }
+  }
+}

@@ -1,0 +1,2 @@
+supplier_id,supplier_name,contact_name,phone,email,address,status
+SUP-0001,Sample Supplier,Contact Name,0900000000,supplier@example.com,Ho Chi Minh City,active

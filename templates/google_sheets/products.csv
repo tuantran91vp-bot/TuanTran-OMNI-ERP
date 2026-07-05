@@ -1,0 +1,2 @@
+product_id,product_name,category,brand,unit,status,created_at,notes
+P-0001,Sample Product,Default,Sample Brand,piece,active,2026-07-05,Replace this row with real product data
