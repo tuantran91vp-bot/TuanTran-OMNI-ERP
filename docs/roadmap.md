@@ -92,6 +92,13 @@ Trang thai trien khai:
 - Bao cao theo thoi gian.
 - Bao cao theo san.
 
+Trang thai trien khai:
+
+- Da co `Report` va `ReportFilters` cho bao cao theo thoi gian/san.
+- Da xuat CSV UTF-8 BOM de mo truc tiep bang Excel.
+- Da xuat PDF mot trang bang thu vien chuan Python.
+- Da co test cho tong hop, filter, CSV va PDF.
+
 ## Giai doan 8 - Hoan thien
 
 - Apps Script.
