@@ -51,8 +51,38 @@ class WebImportTests(unittest.TestCase):
         self.assertEqual(300000, orders[0]["revenue"])
         self.assertEqual(150000, orders[0]["cogs"])
 
+    def test_import_shopee_vietnam_xlsx_uses_data_sheet_and_vietnamese_headers(self) -> None:
+        content = _build_multi_sheet_xlsx(
+            {
+                "sheet3.xml": [["Booking SN", "Booking Creation Date"]],
+                "sheet2.xml": [
+                    [
+                        "Mã đơn hàng",
+                        "Ngày đặt hàng",
+                        "Tên sản phẩm",
+                        "SKU phân loại hàng",
+                        "Tên phân loại hàng",
+                        "Tổng giá trị đơn hàng (VND)",
+                    ],
+                    ["260704S180K0XP", "2026-07-04 17:32", "Cong tac cua cuon", "", "Mau trang", "276713.00"],
+                ],
+            }
+        )
+
+        orders = import_order_file(file_name="shopee.xlsx", content=content, platform_hint="Shopee")
+
+        self.assertEqual(1, len(orders))
+        self.assertEqual("260704S180K0XP", orders[0]["orderId"])
+        self.assertEqual("2026-07-04", orders[0]["date"])
+        self.assertEqual("Mau trang", orders[0]["sku"])
+        self.assertEqual(276713, orders[0]["revenue"])
+
 
 def _build_xlsx(rows: list[list[str]]) -> bytes:
+    return _build_multi_sheet_xlsx({"sheet1.xml": rows})
+
+
+def _build_multi_sheet_xlsx(sheets: dict[str, list[list[str]]]) -> bytes:
     buffer = BytesIO()
     with ZipFile(buffer, "w", compression=ZIP_DEFLATED) as archive:
         archive.writestr(
@@ -72,7 +102,8 @@ def _build_xlsx(rows: list[list[str]]) -> bytes:
   <sheets><sheet name="Orders" sheetId="1" r:id="rId1" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"/></sheets>
 </workbook>""",
         )
-        archive.writestr("xl/worksheets/sheet1.xml", _sheet_xml(rows))
+        for sheet_name, rows in sheets.items():
+            archive.writestr(f"xl/worksheets/{sheet_name}", _sheet_xml(rows))
     return buffer.getvalue()
 
 

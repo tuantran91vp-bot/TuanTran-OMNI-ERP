@@ -21,10 +21,10 @@ const seedData = {
 };
 
 const headerAliases = {
-  date: ['order_date', 'date', 'ngay', 'Order Creation Date', 'Created Time', 'createTime'],
+  date: ['order_date', 'date', 'ngay', 'Ngày đặt hàng', 'Order Creation Date', 'Created Time', 'createTime'],
   platform: ['platform', 'san', 'marketplace'],
-  orderId: ['order_id', 'orderId', 'ma_don', 'Order ID', 'orderItemId'],
-  sku: ['sku', 'internal_sku', 'SKU Reference No.', 'Seller SKU', 'sellerSku'],
+  orderId: ['order_id', 'orderId', 'ma_don', 'Mã đơn hàng', 'Order ID', 'orderItemId'],
+  sku: ['sku', 'internal_sku', 'SKU phân loại hàng', 'SKU sản phẩm', 'SKU Reference No.', 'Seller SKU', 'sellerSku', 'Tên phân loại hàng', 'Tên sản phẩm'],
   revenue: [
     'revenue',
     'gross_revenue',
@@ -35,6 +35,9 @@ const headerAliases = {
     'Order Total',
     'Order Amount',
     'paidPrice',
+    'Tổng giá trị đơn hàng (VND)',
+    'Tổng số tiền Người mua thanh toán',
+    'Tổng số tiền người mua thanh toán',
   ],
   cogs: ['cogs', 'cost_of_goods_sold', 'gia_von', 'Gia von'],
 };
@@ -324,14 +327,18 @@ document.querySelectorAll('#filter-start, #filter-end, #filter-platform').forEac
 loadState().then(renderAll);
 
 async function importOrderFile(file, platform) {
-  if (window.location.protocol === 'file:') {
-    return { orders: await importOrderFileInBrowser(file, platform), mode: 'browser' };
-  }
-
   try {
-    return { orders: await importOrderFileOnServer(file, platform), mode: 'server' };
-  } catch {
-    return { orders: await importOrderFileInBrowser(file, platform), mode: 'browser fallback' };
+    return { orders: await importOrderFileInBrowser(file, platform), mode: 'browser' };
+  } catch (browserError) {
+    if (window.location.protocol === 'file:') {
+      throw browserError;
+    }
+
+    try {
+      return { orders: await importOrderFileOnServer(file, platform), mode: 'server fallback' };
+    } catch {
+      throw browserError;
+    }
   }
 }
 
@@ -395,7 +402,7 @@ function splitCsvLine(line) {
 async function parseXlsx(arrayBuffer) {
   const entries = await unzipEntries(arrayBuffer);
   const sharedStrings = parseSharedStrings(entries.get('xl/sharedStrings.xml') || '');
-  const sheetXml = entries.get('xl/worksheets/sheet1.xml') || Array.from(entries.entries()).find(([name]) => name.startsWith('xl/worksheets/') && name.endsWith('.xml'))?.[1];
+  const sheetXml = sheetWithMostRows(entries);
   if (!sheetXml) throw new Error('File XLSX khong co worksheet');
 
   const doc = new DOMParser().parseFromString(sheetXml, 'application/xml');
@@ -413,6 +420,16 @@ async function parseXlsx(arrayBuffer) {
   if (!rows.length) return [];
   const headers = rows[0].map((header) => header.trim());
   return rows.slice(1).map((values) => Object.fromEntries(headers.map((header, index) => [header, values[index] || '']).filter(([header]) => header)));
+}
+
+function sheetWithMostRows(entries) {
+  const sheets = Array.from(entries.entries()).filter(([name]) => name.startsWith('xl/worksheets/') && name.endsWith('.xml'));
+  if (!sheets.length) return '';
+  return sheets.sort((a, b) => countRows(b[1]) - countRows(a[1]))[0][1];
+}
+
+function countRows(xml) {
+  return (xml.match(/<row\b/g) || []).length;
 }
 
 function parseSharedStrings(xml) {
@@ -440,6 +457,22 @@ function cellValue(cell, sharedStrings) {
 async function unzipEntries(arrayBuffer) {
   const view = new DataView(arrayBuffer);
   const entries = new Map();
+  const centralEntries = centralDirectoryEntries(arrayBuffer);
+
+  for (const entry of centralEntries) {
+    if (!entry.fileName.endsWith('.xml')) continue;
+    const localOffset = entry.localHeaderOffset;
+    const signature = view.getUint32(localOffset, true);
+    if (signature !== 0x04034b50) throw new Error('File XLSX bi loi local header');
+    const fileNameLength = view.getUint16(localOffset + 26, true);
+    const extraLength = view.getUint16(localOffset + 28, true);
+    const dataStart = localOffset + 30 + fileNameLength + extraLength;
+    const compressed = arrayBuffer.slice(dataStart, dataStart + entry.compressedSize);
+    entries.set(entry.fileName, await inflateZipEntry(compressed, entry.compressionMethod));
+  }
+
+  if (entries.size > 0) return entries;
+
   let offset = 0;
   while (offset + 30 <= view.byteLength) {
     const signature = view.getUint32(offset, true);
@@ -460,6 +493,40 @@ async function unzipEntries(arrayBuffer) {
     offset = dataStart + compressedSize;
   }
   return entries;
+}
+
+function centralDirectoryEntries(arrayBuffer) {
+  const view = new DataView(arrayBuffer);
+  const entries = [];
+  const eocdOffset = endOfCentralDirectoryOffset(view);
+  if (eocdOffset < 0) return entries;
+
+  const centralDirectorySize = view.getUint32(eocdOffset + 12, true);
+  const centralDirectoryOffset = view.getUint32(eocdOffset + 16, true);
+  let offset = centralDirectoryOffset;
+  const endOffset = centralDirectoryOffset + centralDirectorySize;
+
+  while (offset + 46 <= endOffset && view.getUint32(offset, true) === 0x02014b50) {
+    const compressionMethod = view.getUint16(offset + 10, true);
+    const compressedSize = view.getUint32(offset + 20, true);
+    const fileNameLength = view.getUint16(offset + 28, true);
+    const extraLength = view.getUint16(offset + 30, true);
+    const commentLength = view.getUint16(offset + 32, true);
+    const localHeaderOffset = view.getUint32(offset + 42, true);
+    const fileName = new TextDecoder().decode(new Uint8Array(arrayBuffer, offset + 46, fileNameLength));
+    entries.push({ fileName, compressionMethod, compressedSize, localHeaderOffset });
+    offset += 46 + fileNameLength + extraLength + commentLength;
+  }
+
+  return entries;
+}
+
+function endOfCentralDirectoryOffset(view) {
+  const minimumOffset = Math.max(0, view.byteLength - 65557);
+  for (let offset = view.byteLength - 22; offset >= minimumOffset; offset -= 1) {
+    if (view.getUint32(offset, true) === 0x06054b50) return offset;
+  }
+  return -1;
 }
 
 async function inflateZipEntry(arrayBuffer, compressionMethod) {

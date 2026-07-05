@@ -11,10 +11,20 @@ from zipfile import ZipFile
 
 
 HEADER_ALIASES = {
-    "date": ["order_date", "date", "ngay", "Order Creation Date", "Created Time", "createTime"],
+    "date": ["order_date", "date", "ngay", "Ngày đặt hàng", "Order Creation Date", "Created Time", "createTime"],
     "platform": ["platform", "san", "marketplace"],
-    "orderId": ["order_id", "orderId", "ma_don", "Order ID", "orderItemId"],
-    "sku": ["sku", "internal_sku", "SKU Reference No.", "Seller SKU", "sellerSku"],
+    "orderId": ["order_id", "orderId", "ma_don", "Mã đơn hàng", "Order ID", "orderItemId"],
+    "sku": [
+        "sku",
+        "internal_sku",
+        "SKU phân loại hàng",
+        "SKU sản phẩm",
+        "SKU Reference No.",
+        "Seller SKU",
+        "sellerSku",
+        "Tên phân loại hàng",
+        "Tên sản phẩm",
+    ],
     "revenue": [
         "revenue",
         "gross_revenue",
@@ -25,6 +35,9 @@ HEADER_ALIASES = {
         "Order Total",
         "Order Amount",
         "paidPrice",
+        "Tổng giá trị đơn hàng (VND)",
+        "Tổng số tiền Người mua thanh toán",
+        "Tổng số tiền người mua thanh toán",
     ],
     "cogs": ["cogs", "cost_of_goods_sold", "gia_von", "Gia von"],
 }
@@ -74,7 +87,7 @@ def _parse_csv(content: bytes) -> list[dict[str, str]]:
 def _parse_xlsx(content: bytes) -> list[dict[str, str]]:
     with ZipFile(BytesIO(content)) as workbook:
         shared_strings = _read_shared_strings(workbook)
-        sheet_path = _first_sheet_path(workbook)
+        sheet_path = _sheet_with_most_rows(workbook)
         sheet_xml = workbook.read(sheet_path)
 
     root = ElementTree.fromstring(sheet_xml)
@@ -117,13 +130,16 @@ def _read_shared_strings(workbook: ZipFile) -> list[str]:
     return strings
 
 
-def _first_sheet_path(workbook: ZipFile) -> str:
-    if "xl/worksheets/sheet1.xml" in workbook.namelist():
-        return "xl/worksheets/sheet1.xml"
-    for name in workbook.namelist():
-        if name.startswith("xl/worksheets/") and name.endswith(".xml"):
-            return name
-    raise ValueError("xlsx file does not contain a worksheet")
+def _sheet_with_most_rows(workbook: ZipFile) -> str:
+    sheet_names = [
+        name
+        for name in workbook.namelist()
+        if name.startswith("xl/worksheets/") and name.endswith(".xml")
+    ]
+    if not sheet_names:
+        raise ValueError("xlsx file does not contain a worksheet")
+
+    return max(sheet_names, key=lambda name: workbook.read(name).count(b"<row"))
 
 
 def _cell_value(cell: ElementTree.Element, shared_strings: list[str]) -> str:

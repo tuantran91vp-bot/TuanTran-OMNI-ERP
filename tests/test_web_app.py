@@ -35,7 +35,9 @@ class WebAppTests(unittest.TestCase):
         self.assertIn("/api/state", javascript)
         self.assertIn("parseXlsx", javascript)
         self.assertIn("DecompressionStream", javascript)
-        self.assertIn("browser fallback", javascript)
+        self.assertIn("server fallback", javascript)
+        self.assertIn("centralDirectoryEntries", javascript)
+        self.assertIn("endOfCentralDirectoryOffset", javascript)
 
 
 if __name__ == "__main__":
