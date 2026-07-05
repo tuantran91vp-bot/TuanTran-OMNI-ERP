@@ -32,6 +32,12 @@ Module `omni_erp.operations.backup` tao zip archive cho cac tai san trien khai:
 
 Module `omni_erp.operations.packaging` kiem tra cac file bat buoc truoc khi dong goi. Package duoc xem la hoan tat khi `PackageManifest.is_complete` la `True`.
 
+Co the dong goi nhanh bang:
+
+```powershell
+.\scripts\package.ps1
+```
+
 ## Performance
 
 Giai doan nay giu cac aggregation chinh o dang mot lan duyet du lieu va dung `Decimal` de tranh sai so tien. Cac exporter va backup chi xu ly file theo stream/zip thay vi giu output lon khong can thiet trong domain layer.

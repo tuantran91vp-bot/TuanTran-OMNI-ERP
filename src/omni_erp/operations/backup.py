@@ -13,6 +13,7 @@ DEFAULT_BACKUP_PATHS = (
     "docs",
     "templates",
     "apps_script",
+    "web",
     "README.md",
     "pyproject.toml",
 )

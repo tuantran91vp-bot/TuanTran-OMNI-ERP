@@ -20,6 +20,10 @@ PACKAGE_REQUIRED_PATHS = (
     "templates/google_sheets/settings.csv",
     "apps_script/appsscript.json",
     "apps_script/Code.gs",
+    "web/index.html",
+    "web/styles.css",
+    "web/app.js",
+    "web/assets/omni-logo.svg",
 )
 
 

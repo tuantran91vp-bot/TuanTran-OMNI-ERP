@@ -51,6 +51,31 @@ Chay quality gate day du:
 
 GitHub Actions se tu dong chay test va compile tren moi push/pull request vao `main`.
 
+## Su dung phan mem
+
+Mo web app:
+
+```text
+web/index.html
+```
+
+Chay truc tiep trong repo:
+
+```powershell
+$env:PYTHONPATH="src"
+python -m omni_erp --version
+python -m omni_erp check --project-root .
+python -m omni_erp package --project-root .
+```
+
+Dong goi nhanh:
+
+```powershell
+.\scripts\package.ps1
+```
+
+Huong dan chi tiet nam trong `docs/usage.md`.
+
 ## Google Sheet template
 
 Thu muc `templates/google_sheets` chua cac file CSV dai dien cho tung sheet:

@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>OMNI ERP</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <aside class="sidebar">
+      <div class="brand">
+        <img src="assets/omni-logo.svg" alt="OMNI ERP">
+        <div>
+          <strong>OMNI ERP</strong>
+          <span>Inventory & Profit</span>
+        </div>
+      </div>
+      <nav class="nav" aria-label="Main">
+        <button class="nav-item active" data-view="dashboard">Dashboard</button>
+        <button class="nav-item" data-view="inventory">Kho & SKU</button>
+        <button class="nav-item" data-view="orders">Don hang</button>
+        <button class="nav-item" data-view="reports">Bao cao</button>
+        <button class="nav-item" data-view="operations">Van hanh</button>
+      </nav>
+    </aside>
+
+    <main class="app">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">TuanTran OMNI ERP</p>
+          <h1 id="view-title">Dashboard</h1>
+        </div>
+        <div class="actions">
+          <button id="reset-data" class="secondary">Reset demo data</button>
+          <button id="export-json">Export JSON</button>
+        </div>
+      </header>
+
+      <section id="dashboard" class="view active-view">
+        <div class="kpi-grid">
+          <article class="kpi"><span>Doanh thu</span><strong id="kpi-revenue">0</strong></article>
+          <article class="kpi"><span>Loi nhuan</span><strong id="kpi-profit">0</strong></article>
+          <article class="kpi"><span>Don hang</span><strong id="kpi-orders">0</strong></article>
+          <article class="kpi"><span>Ton kho</span><strong id="kpi-stock">0</strong></article>
+        </div>
+        <div class="dashboard-grid">
+          <section class="panel wide">
+            <div class="panel-head">
+              <h2>Doanh thu & loi nhuan theo ngay</h2>
+              <span id="chart-range"></span>
+            </div>
+            <canvas id="revenue-chart" width="900" height="280" aria-label="Revenue and profit chart"></canvas>
+          </section>
+          <section class="panel">
+            <div class="panel-head">
+              <h2>Theo san</h2>
+            </div>
+            <div id="platform-summary" class="stack"></div>
+          </section>
+        </div>
+      </section>
+
+      <section id="inventory" class="view">
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Ton kho</h2>
+            <span id="inventory-count"></span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Kho</th>
+                  <th>SKU</th>
+                  <th>So luong</th>
+                  <th>Gia tri ton</th>
+                  <th>Canh bao</th>
+                </tr>
+              </thead>
+              <tbody id="inventory-table"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="orders" class="view">
+        <div class="split">
+          <form id="order-form" class="panel form">
+            <div class="panel-head"><h2>Them don hang</h2></div>
+            <label>Ngay <input name="orderDate" type="date" required></label>
+            <label>San
+              <select name="platform">
+                <option>Shopee</option>
+                <option>TikTok Shop</option>
+                <option>Lazada</option>
+              </select>
+            </label>
+            <label>Ma don <input name="orderId" required></label>
+            <label>SKU noi bo <input name="sku" required></label>
+            <label>Doanh thu <input name="revenue" type="number" min="0" step="1000" required></label>
+            <label>Gia von <input name="cogs" type="number" min="0" step="1000" required></label>
+            <button type="submit">Them don</button>
+          </form>
+          <section class="panel">
+            <div class="panel-head"><h2>Don gan day</h2></div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Ngay</th>
+                    <th>San</th>
+                    <th>Don</th>
+                    <th>SKU</th>
+                    <th>Loi nhuan</th>
+                  </tr>
+                </thead>
+                <tbody id="orders-table"></tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section id="reports" class="view">
+        <div class="panel form">
+          <div class="panel-head"><h2>Loc bao cao</h2></div>
+          <div class="filters">
+            <label>Tu ngay <input id="filter-start" type="date"></label>
+            <label>Den ngay <input id="filter-end" type="date"></label>
+            <label>San
+              <select id="filter-platform">
+                <option value="">Tat ca</option>
+                <option>Shopee</option>
+                <option>TikTok Shop</option>
+                <option>Lazada</option>
+              </select>
+            </label>
+            <button id="download-csv" type="button">Tai CSV</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Ngay</th>
+                  <th>San</th>
+                  <th>Don</th>
+                  <th>Doanh thu</th>
+                  <th>Gia von</th>
+                  <th>Loi nhuan</th>
+                </tr>
+              </thead>
+              <tbody id="report-table"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="operations" class="view">
+        <div class="dashboard-grid">
+          <section class="panel">
+            <div class="panel-head"><h2>Automation</h2></div>
+            <div id="automation-list" class="stack"></div>
+          </section>
+          <section class="panel">
+            <div class="panel-head"><h2>Package status</h2></div>
+            <div class="status-list">
+              <span class="status ok">Apps Script ready</span>
+              <span class="status ok">Templates ready</span>
+              <span class="status ok">Reports ready</span>
+              <span class="status ok">Backup ready</span>
+            </div>
+          </section>
+        </div>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
