@@ -44,16 +44,26 @@ HEADER_ALIASES = {
 
 
 def import_order_file(*, file_name: str, content: bytes, platform_hint: str = "") -> list[dict[str, object]]:
-    """Parse CSV/XLSX order files into web app order dictionaries."""
+    """Parse CSV/XLSX order files into normalized web app order dictionaries."""
+
+    return import_order_payload(file_name=file_name, content=content, platform_hint=platform_hint)["orders"]
+
+
+def import_order_payload(*, file_name: str, content: bytes, platform_hint: str = "") -> dict[str, object]:
+    """Parse CSV/XLSX order files into normalized orders and original table rows."""
 
     suffix = Path(file_name).suffix.casefold()
     if suffix == ".csv":
-        rows = _parse_csv(content)
+        headers, rows = _parse_csv(content)
     elif suffix == ".xlsx":
-        rows = _parse_xlsx(content)
+        headers, rows = _parse_xlsx(content)
     else:
         raise ValueError("only .xlsx and .csv files are supported")
-    return normalize_order_rows(rows, platform_hint=platform_hint)
+    return {
+        "headers": headers,
+        "rows": rows,
+        "orders": normalize_order_rows(rows, platform_hint=platform_hint),
+    }
 
 
 def normalize_order_rows(rows: list[dict[str, str]], *, platform_hint: str = "") -> list[dict[str, object]]:
@@ -79,12 +89,14 @@ def normalize_order_rows(rows: list[dict[str, str]], *, platform_hint: str = "")
     return normalized
 
 
-def _parse_csv(content: bytes) -> list[dict[str, str]]:
+def _parse_csv(content: bytes) -> tuple[list[str], list[dict[str, str]]]:
     text = content.decode("utf-8-sig")
-    return [dict(row) for row in csv.DictReader(StringIO(text))]
+    reader = csv.DictReader(StringIO(text))
+    headers = list(reader.fieldnames or [])
+    return headers, [dict(row) for row in reader]
 
 
-def _parse_xlsx(content: bytes) -> list[dict[str, str]]:
+def _parse_xlsx(content: bytes) -> tuple[list[str], list[dict[str, str]]]:
     with ZipFile(BytesIO(content)) as workbook:
         shared_strings = _read_shared_strings(workbook)
         sheet_path = _sheet_with_most_rows(workbook)
@@ -102,7 +114,7 @@ def _parse_xlsx(content: bytes) -> list[dict[str, str]]:
         rows.append(values)
 
     if not rows:
-        return []
+        return [], []
 
     headers = [header.strip() for header in rows[0]]
     parsed_rows: list[dict[str, str]] = []
@@ -114,7 +126,7 @@ def _parse_xlsx(content: bytes) -> list[dict[str, str]]:
                 if header
             }
         )
-    return parsed_rows
+    return headers, parsed_rows
 
 
 def _read_shared_strings(workbook: ZipFile) -> list[str]:

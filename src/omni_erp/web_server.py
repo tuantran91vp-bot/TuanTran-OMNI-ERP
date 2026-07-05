@@ -7,7 +7,7 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
-from omni_erp.web_import import import_order_file
+from omni_erp.web_import import import_order_payload
 from omni_erp.web_state import read_state, write_state
 
 
@@ -35,12 +35,12 @@ class OmniWebHandler(SimpleHTTPRequestHandler):
         platform_hint = parse_qs(parsed_url.query).get("platform", [""])[0]
 
         try:
-            orders = import_order_file(file_name=file_name, content=content, platform_hint=platform_hint)
+            payload = import_order_payload(file_name=file_name, content=content, platform_hint=platform_hint)
         except Exception as exc:  # pragma: no cover - returned to browser for usability
             self._send_json({"error": str(exc)}, status=400)
             return
 
-        self._send_json({"orders": orders, "count": len(orders)})
+        self._send_json({**payload, "count": len(payload["orders"])})
 
     def do_PUT(self) -> None:
         parsed_url = urlparse(self.path)

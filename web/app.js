@@ -13,6 +13,13 @@ const seedData = {
     { date: '2026-07-03', platform: 'Lazada', orderId: 'LZD-1001', sku: 'SKU-GREEN', revenue: 180000, cogs: 76000 },
     { date: '2026-07-04', platform: 'Shopee', orderId: 'SHP-1002', sku: 'SKU-RED', revenue: 135000, cogs: 62000 },
   ],
+  orderHeaders: ['Ngay', 'San', 'Ma don', 'SKU', 'Doanh thu', 'Gia von', 'Loi nhuan'],
+  orderRows: [
+    { Ngay: '2026-07-01', San: 'Shopee', 'Ma don': 'SHP-1001', SKU: 'SKU-RED', 'Doanh thu': 240000, 'Gia von': 110000, 'Loi nhuan': 130000 },
+    { Ngay: '2026-07-02', San: 'TikTok Shop', 'Ma don': 'TT-1001', SKU: 'SKU-BLUE', 'Doanh thu': 320000, 'Gia von': 145000, 'Loi nhuan': 175000 },
+    { Ngay: '2026-07-03', San: 'Lazada', 'Ma don': 'LZD-1001', SKU: 'SKU-GREEN', 'Doanh thu': 180000, 'Gia von': 76000, 'Loi nhuan': 104000 },
+    { Ngay: '2026-07-04', San: 'Shopee', 'Ma don': 'SHP-1002', SKU: 'SKU-RED', 'Doanh thu': 135000, 'Gia von': 62000, 'Loi nhuan': 73000 },
+  ],
   automations: [
     { task: 'Sync marketplace orders', schedule: 'Daily 07:00', status: 'Ready' },
     { task: 'Refresh dashboard', schedule: 'Daily 07:15', status: 'Ready' },
@@ -88,6 +95,11 @@ async function saveState() {
 
 function hasStateData(value) {
   return value && Array.isArray(value.orders) && Array.isArray(value.inventory) && Array.isArray(value.automations);
+}
+
+function ensureStateShape() {
+  state.orderHeaders = Array.isArray(state.orderHeaders) ? state.orderHeaders : structuredClone(seedData.orderHeaders);
+  state.orderRows = Array.isArray(state.orderRows) ? state.orderRows : rowsFromNormalizedOrders(state.orders);
 }
 
 function money(value) {
@@ -201,9 +213,10 @@ function renderInventory() {
 }
 
 function renderOrders() {
-  const rows = [...state.orders].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 20);
-  document.querySelector('#orders-table').innerHTML = rows
-    .map((order) => `<tr><td>${order.date}</td><td>${order.platform}</td><td>${order.orderId}</td><td>${order.sku}</td><td>${money(profit(order))}</td></tr>`)
+  ensureStateShape();
+  document.querySelector('#orders-table-head').innerHTML = `<tr>${state.orderHeaders.map((header) => `<th>${escapeHtml(header)}</th>`).join('')}</tr>`;
+  document.querySelector('#orders-table').innerHTML = state.orderRows
+    .map((row) => `<tr>${state.orderHeaders.map((header) => `<td>${escapeHtml(row[header] ?? '')}</td>`).join('')}</tr>`)
     .join('');
 }
 
@@ -281,6 +294,20 @@ document.querySelector('#order-form').addEventListener('submit', (event) => {
     revenue: Number(form.get('revenue')),
     cogs: Number(form.get('cogs')),
   });
+  appendOrderTableRows({
+    headers: seedData.orderHeaders,
+    rows: [
+      {
+        Ngay: form.get('orderDate'),
+        San: form.get('platform'),
+        'Ma don': form.get('orderId'),
+        SKU: form.get('sku'),
+        'Doanh thu': Number(form.get('revenue')),
+        'Gia von': Number(form.get('cogs')),
+        'Loi nhuan': Number(form.get('revenue')) - Number(form.get('cogs')),
+      },
+    ],
+  });
   saveState();
   event.currentTarget.reset();
   renderAll();
@@ -303,6 +330,7 @@ document.querySelector('#import-form').addEventListener('submit', async (event) 
     const importResult = await importOrderFile(file, platform);
     const importedOrders = importResult.orders;
     state.orders.push(...importedOrders);
+    appendOrderTableRows(importResult);
     saveState();
     renderAll();
     status.textContent = `Da import ${importedOrders.length} dong don hang (${importResult.mode}).`;
@@ -328,14 +356,14 @@ loadState().then(renderAll);
 
 async function importOrderFile(file, platform) {
   try {
-    return { orders: await importOrderFileInBrowser(file, platform), mode: 'browser' };
+    return { ...(await importOrderFileInBrowser(file, platform)), mode: 'browser' };
   } catch (browserError) {
     if (window.location.protocol === 'file:') {
       throw browserError;
     }
 
     try {
-      return { orders: await importOrderFileOnServer(file, platform), mode: 'server fallback' };
+      return { ...(await importOrderFileOnServer(file, platform)), mode: 'server fallback' };
     } catch {
       throw browserError;
     }
@@ -352,29 +380,35 @@ async function importOrderFileOnServer(file, platform) {
   if (!response.ok) {
     throw new Error(payload.error || 'Import failed');
   }
-  return payload.orders;
+  return {
+    orders: payload.orders || [],
+    headers: payload.headers || [],
+    rows: payload.rows || [],
+  };
 }
 
 async function importOrderFileInBrowser(file, platform) {
   const lowerName = file.name.toLowerCase();
   if (lowerName.endsWith('.csv')) {
-    return normalizeRows(parseCsv(await file.text()), platform);
+    const parsed = parseCsv(await file.text());
+    return { ...parsed, orders: normalizeRows(parsed.rows, platform) };
   }
   if (lowerName.endsWith('.xlsx')) {
-    const rows = await parseXlsx(await file.arrayBuffer());
-    return normalizeRows(rows, platform);
+    const parsed = await parseXlsx(await file.arrayBuffer());
+    return { ...parsed, orders: normalizeRows(parsed.rows, platform) };
   }
   throw new Error('Chi ho tro file .xlsx hoac .csv');
 }
 
 function parseCsv(text) {
   const lines = text.replace(/^\ufeff/, '').split(/\r?\n/).filter((line) => line.trim());
-  if (!lines.length) return [];
+  if (!lines.length) return { headers: [], rows: [] };
   const headers = splitCsvLine(lines[0]);
-  return lines.slice(1).map((line) => {
+  const rows = lines.slice(1).map((line) => {
     const values = splitCsvLine(line);
     return Object.fromEntries(headers.map((header, index) => [header, values[index] || '']));
   });
+  return { headers, rows };
 }
 
 function splitCsvLine(line) {
@@ -417,9 +451,12 @@ async function parseXlsx(arrayBuffer) {
     return values.map((value) => value || '');
   });
 
-  if (!rows.length) return [];
+  if (!rows.length) return { headers: [], rows: [] };
   const headers = rows[0].map((header) => header.trim());
-  return rows.slice(1).map((values) => Object.fromEntries(headers.map((header, index) => [header, values[index] || '']).filter(([header]) => header)));
+  return {
+    headers,
+    rows: rows.slice(1).map((values) => Object.fromEntries(headers.map((header, index) => [header, values[index] || '']).filter(([header]) => header))),
+  };
 }
 
 function sheetWithMostRows(entries) {
@@ -597,4 +634,42 @@ function numberValue(value) {
     .trim();
   const parsed = Number(cleaned);
   return Number.isFinite(parsed) ? Math.round(parsed) : 0;
+}
+
+function appendOrderTableRows(importResult) {
+  const headers = Array.isArray(importResult.headers) ? importResult.headers.filter(Boolean) : [];
+  const rows = Array.isArray(importResult.rows) ? importResult.rows : [];
+  if (!headers.length || !rows.length) return;
+
+  state.orderHeaders = mergeHeaders(state.orderHeaders || [], headers);
+  state.orderRows = [...(state.orderRows || []), ...rows];
+}
+
+function mergeHeaders(existingHeaders, newHeaders) {
+  const merged = [...existingHeaders];
+  newHeaders.forEach((header) => {
+    if (!merged.includes(header)) merged.push(header);
+  });
+  return merged;
+}
+
+function rowsFromNormalizedOrders(orders) {
+  return orders.map((order) => ({
+    Ngay: order.date,
+    San: order.platform,
+    'Ma don': order.orderId,
+    SKU: order.sku,
+    'Doanh thu': order.revenue,
+    'Gia von': order.cogs,
+    'Loi nhuan': profit(order),
+  }));
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
 }

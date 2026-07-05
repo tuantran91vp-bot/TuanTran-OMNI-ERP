@@ -9,7 +9,7 @@ import sys
 ROOT_DIR = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT_DIR / "src"))
 
-from omni_erp.web_import import import_order_file  # noqa: E402
+from omni_erp.web_import import import_order_file, import_order_payload  # noqa: E402
 
 
 class WebImportTests(unittest.TestCase):
@@ -76,6 +76,22 @@ class WebImportTests(unittest.TestCase):
         self.assertEqual("2026-07-04", orders[0]["date"])
         self.assertEqual("Mau trang", orders[0]["sku"])
         self.assertEqual(276713, orders[0]["revenue"])
+
+    def test_import_payload_preserves_original_order_table_columns(self) -> None:
+        content = _build_multi_sheet_xlsx(
+            {
+                "sheet2.xml": [
+                    ["Mã đơn hàng", "Ngày đặt hàng", "Tên sản phẩm", "Tổng giá trị đơn hàng (VND)"],
+                    ["260704S180K0XP", "2026-07-04 17:32", "Cong tac cua cuon", "276713.00"],
+                ]
+            }
+        )
+
+        payload = import_order_payload(file_name="shopee.xlsx", content=content, platform_hint="Shopee")
+
+        self.assertEqual(["Mã đơn hàng", "Ngày đặt hàng", "Tên sản phẩm", "Tổng giá trị đơn hàng (VND)"], payload["headers"])
+        self.assertEqual("Cong tac cua cuon", payload["rows"][0]["Tên sản phẩm"])
+        self.assertEqual("260704S180K0XP", payload["orders"][0]["orderId"])
 
 
 def _build_xlsx(rows: list[list[str]]) -> bytes:

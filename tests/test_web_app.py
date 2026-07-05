@@ -38,6 +38,9 @@ class WebAppTests(unittest.TestCase):
         self.assertIn("server fallback", javascript)
         self.assertIn("centralDirectoryEntries", javascript)
         self.assertIn("endOfCentralDirectoryOffset", javascript)
+        self.assertIn("orderHeaders", javascript)
+        self.assertIn("appendOrderTableRows", javascript)
+        self.assertIn("orders-table-head", (WEB_DIR / "index.html").read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":
