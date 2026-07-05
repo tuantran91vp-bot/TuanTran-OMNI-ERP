@@ -4,7 +4,7 @@ OMNI ERP la he thong quan tri ban hang da san, tap trung vao Google Sheet, kho, 
 
 ## Trang thai lo trinh
 
-Dang o **Giai doan 1 - Foundation**.
+Da hoan thanh nen **Giai doan 1 - Foundation** va dang bat dau **Giai doan 2 - Warehouse & SKU**.
 
 Muc tieu cua giai doan nay:
 
@@ -22,6 +22,7 @@ Muc tieu cua giai doan nay:
 ├── docs/                   # Tai lieu van hanh va lo trinh
 ├── src/omni_erp/           # Ma nguon ung dung
 │   └── foundation/         # Schema va validator nen tang
+│   └── warehouse/          # San pham, kho, lo hang, phieu nhap/xuat, FIFO
 ├── templates/google_sheets # CSV template dung de tao Google Sheet
 └── tests/                  # Kiem thu nen tang
 ```

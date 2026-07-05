@@ -19,6 +19,12 @@
 - Phieu nhap/xuat.
 - Kiem tra ton kho.
 
+Trang thai trien khai:
+
+- Da co domain model cho `Product`, `Warehouse`, `InventoryLot`, `StockMovement`.
+- Da co `WarehouseService` de nhap kho, xuat kho FIFO, tinh ton theo kho/SKU.
+- Da co test cho nhieu kho, FIFO, phieu nhap/xuat va loi thieu ton.
+
 ## Giai doan 3 - Import da san
 
 - Shopee.
