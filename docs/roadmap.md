@@ -63,6 +63,13 @@ Trang thai trien khai:
 - Tien thuc nhan.
 - Loi nhuan.
 
+Trang thai trien khai:
+
+- Da co `ReconciliationResult` cho ket qua doi soat theo dong don.
+- Da tinh doanh thu gross, voucher, phi san, phi thanh toan, COD, tien thuc nhan.
+- Da tinh loi nhuan tu tien thuc nhan tru COGS.
+- Da ho tro nhap tien thuc nhan thuc te tu sao ke/bao cao san.
+
 ## Giai doan 6 - Dashboard
 
 - KPI.
